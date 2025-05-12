@@ -1,0 +1,96 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+**/build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# IDEs and editors
+.idea/
+.vscode/
+*.iml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Symbolication and obfuscation
+app.*.symbols
+app.*.map.json
+
+# Crash dumps and memory dumps
+*.hprof
+*.dmp
+*.stackdump
+*.core
+
+# Firebase/Google config files
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_options.dart
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+
+# Miscellaneous
+*.tmp
+*.swo
+
+# Large files (add more patterns as needed)
+*.mp4
+*.mov
+*.avi
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
+*.exe
+*.dll
+*.so
+*.bin
+*.apk
+*.ipa
+
+# Android Studio build artifacts
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Remove any specific large files
+android/*.hprof
+*.hprof
