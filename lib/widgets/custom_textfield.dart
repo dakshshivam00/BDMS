@@ -15,6 +15,7 @@ class CustomTextField extends StatelessWidget {
   final int? maxLines;
   final bool readOnly;
   final VoidCallback? onTap;
+  final String? hintText;
 
   const CustomTextField({
     Key? key,
@@ -31,6 +32,7 @@ class CustomTextField extends StatelessWidget {
     this.maxLines = 1,
     this.readOnly = false,
     this.onTap,
+    this.hintText,
   }) : super(key: key);
 
   @override
@@ -40,10 +42,7 @@ class CustomTextField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -60,24 +59,22 @@ class CustomTextField extends StatelessWidget {
             hintText: hint,
             suffixIcon: suffixIcon,
             prefixIcon: prefixIcon,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: Colors.grey.shade300,
-              ),
+              borderSide: BorderSide(color: Colors.grey.shade300),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: Theme.of(context).primaryColor,
-              ),
+              borderSide: BorderSide(color: Theme.of(context).primaryColor),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Colors.red),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
             ),
           ),
         ),

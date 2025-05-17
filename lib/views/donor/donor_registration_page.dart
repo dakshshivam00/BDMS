@@ -29,6 +29,56 @@ class _DonorRegistrationPageState extends State<DonorRegistrationPage> {
   final userController = Get.find<UserController>();
 
   @override
+  void initState() {
+    super.initState();
+
+    // Check if user profile is complete
+    _checkProfileCompletion();
+  }
+
+  void _checkProfileCompletion() {
+    final user = userController.currentUser.value;
+    if (user != null) {
+      if (user.name.isEmpty ||
+          user.phoneNumber.isEmpty ||
+          user.city.isEmpty ||
+          user.bloodType.isEmpty) {
+        Future.delayed(Duration.zero, () {
+          Get.dialog(
+            AlertDialog(
+              title: const Text('Complete Your Profile'),
+              content: const Text(
+                'To register as a donor, you need to complete your profile with your personal information including name, phone number, location, and blood type.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Get.back();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Get.back();
+                    Get.toNamed('/edit-profile');
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('Update Profile'),
+                ),
+              ],
+            ),
+          );
+        });
+      } else if (user.bloodType.isNotEmpty) {
+        // Pre-select blood type based on user profile if available
+        setState(() {
+          _selectedBloodType = user.bloodType;
+        });
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _lastDonationController.dispose();
     super.dispose();
@@ -116,23 +166,26 @@ class _DonorRegistrationPageState extends State<DonorRegistrationPage> {
               const SizedBox(height: 16),
 
               // Health Conditions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Do you have any health conditions?',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  Switch(
-                    value: _hasHealthConditions,
-                    onChanged: (value) {
-                      setState(() {
-                        _hasHealthConditions = value;
-                      });
-                    },
-                    activeColor: Colors.red,
-                  ),
-                ],
+              SizedBox(
+                width: double.infinity,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Do you have any health conditions?',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    Switch(
+                      value: _hasHealthConditions,
+                      onChanged: (value) {
+                        setState(() {
+                          _hasHealthConditions = value;
+                        });
+                      },
+                      activeColor: Colors.red,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -164,8 +217,9 @@ class _DonorRegistrationPageState extends State<DonorRegistrationPage> {
                                       bloodType: _selectedBloodType,
                                       lastDonationDate: _lastDonationDate,
                                     );
-                                Get.back();
+
                                 if (success) {
+                                  Get.back();
                                   Get.snackbar(
                                     'Success',
                                     'Registered as donor successfully',
@@ -175,6 +229,14 @@ class _DonorRegistrationPageState extends State<DonorRegistrationPage> {
                                     ),
                                     colorText: Colors.green,
                                   );
+
+                                  // Navigate to available donors page using offAll to ensure the list is refreshed
+                                  // The key is to use offAllNamed instead of toNamed to ensure a fresh instance
+                                  Future.delayed(const Duration(seconds: 1), () {
+                                    // Force update of the user controller before navigation
+                                    userController.update(['donors_list']);
+                                    Get.offAndToNamed('/available-donors');
+                                  });
                                 }
                               }
                             },

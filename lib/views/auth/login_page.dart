@@ -13,6 +13,12 @@ class LoginPage extends StatelessWidget {
     final phoneController = TextEditingController();
     final authController = Get.put(AuthController(), permanent: true);
 
+    // Set test number when in test mode
+    if (AuthController.useTestOTP) {
+      // Show test phone numbers in a dropdown
+      phoneController.text = AuthController.testPhoneNumbers[0];
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -37,7 +43,86 @@ class LoginPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Phone verification is required for all users',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
                 const SizedBox(height: 40),
+
+                // Test mode indicator
+                if (AuthController.useTestOTP)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.yellow.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.yellow.shade700),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.orange.shade800,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'DEVELOPMENT MODE',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange.shade900,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Using test OTP: ${AuthController.testOTP}\nSelect a test phone number below',
+                          style: TextStyle(color: Colors.orange.shade900),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Each test phone number creates a separate user account',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Show test phone numbers dropdown when in test mode
+                if (AuthController.useTestOTP)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: phoneController.text,
+                        hint: const Text('Select test phone number'),
+                        items:
+                            AuthController.testPhoneNumbers.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text('Test Phone: $value'),
+                              );
+                            }).toList(),
+                        onChanged: (newValue) {
+                          if (newValue != null) {
+                            phoneController.text = newValue;
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+
                 // Phone number field with country code prefix
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,

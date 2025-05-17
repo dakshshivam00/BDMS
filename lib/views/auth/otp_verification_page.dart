@@ -7,11 +7,9 @@ import '../../widgets/custom_textfield.dart';
 
 class OTPVerificationPage extends StatefulWidget {
   final String phoneNumber;
-  
-  const OTPVerificationPage({
-    Key? key, 
-    required this.phoneNumber,
-  }) : super(key: key);
+
+  const OTPVerificationPage({Key? key, required this.phoneNumber})
+    : super(key: key);
 
   @override
   State<OTPVerificationPage> createState() => _OTPVerificationPageState();
@@ -24,11 +22,21 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
   late Timer timer;
   bool canResend = false;
 
+  // Check if using test mode
+  bool get isTestMode =>
+      AuthController.useTestOTP &&
+      widget.phoneNumber == AuthController.testPhoneNumber;
+
   @override
   void initState() {
     super.initState();
     authController = Get.find<AuthController>();
     startTimer();
+
+    // Auto-fill test OTP when in test mode
+    if (isTestMode) {
+      otpController.text = AuthController.testOTP;
+    }
   }
 
   void startTimer() {
@@ -65,58 +73,91 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Enter the OTP sent to +91 ${widget.phoneNumber}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+      body: SingleChildScrollView(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Enter the OTP sent to +91 ${widget.phoneNumber}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
+                    TextButton(
+                      onPressed: () => Get.back(),
+                      child: const Text('Edit'),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+                const Text(
+                  'OTP verification is required for all users. After verification, you\'ll be directed to your account or asked to complete your profile if needed.',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+
+                // Test mode indicator
+                if (isTestMode)
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.yellow.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.yellow.shade700),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange.shade800),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'TEST MODE: OTP is ${AuthController.testOTP}',
+                            style: TextStyle(color: Colors.orange.shade900),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  TextButton(
-                    onPressed: () => Get.back(),
-                    child: const Text('Edit'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              CustomTextField(
-                label: 'OTP',
-                hint: 'Enter the 6-digit OTP',
-                controller: otpController,
-                keyboardType: TextInputType.number,
-                prefixIcon: const Icon(Icons.lock),
-              ),
-              const SizedBox(height: 10),
-              Center(
-                child: Text(
-                  canResend 
-                      ? 'You can resend OTP now' 
-                      : 'Resend OTP in $timeLeft seconds',
-                  style: TextStyle(
-                    color: canResend ? Colors.blue : Colors.grey,
+
+                const SizedBox(height: 20),
+                CustomTextField(
+                  label: 'OTP',
+                  hint: 'Enter the 6-digit OTP',
+                  controller: otpController,
+                  keyboardType: TextInputType.number,
+                  prefixIcon: const Icon(Icons.lock),
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: Text(
+                    canResend
+                        ? 'You can resend OTP now'
+                        : 'Resend OTP in $timeLeft seconds',
+                    style: TextStyle(
+                      color: canResend ? Colors.blue : Colors.grey,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Obx(() => CustomButton(
+                const SizedBox(height: 20),
+                Obx(
+                  () => CustomButton(
                     text: 'Verify OTP',
                     isLoading: authController.isLoading.value,
                     onPressed: () async {
                       if (otpController.text.isEmpty) {
                         Get.snackbar(
-                          'Error', 
+                          'Error',
                           'Please enter the OTP',
                           snackPosition: SnackPosition.BOTTOM,
                           backgroundColor: Colors.red.withOpacity(0.1),
@@ -124,22 +165,39 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                         );
                         return;
                       }
-                      
+
+                      if (otpController.text.length < 6) {
+                        Get.snackbar(
+                          'Error',
+                          'Please enter a valid 6-digit OTP',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.red.withOpacity(0.1),
+                          colorText: Colors.red,
+                        );
+                        return;
+                      }
+
                       try {
-                        final result = await authController.verifyOTP(otpController.text);
-                        if (result) {
-                          Get.snackbar(
-                            'Success', 
-                            'OTP verified successfully',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.green.withOpacity(0.1),
-                            colorText: Colors.green,
-                          );
-                          // Navigate to home page or next screen
-                        }
+                        Get.snackbar(
+                          'Verifying',
+                          'Please wait while we verify your OTP...',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.blue.withOpacity(0.1),
+                          colorText: Colors.blue,
+                          duration: const Duration(seconds: 2),
+                        );
+
+                        // Store phone number in a global variable
+                        authController.lastVerifiedPhone = widget.phoneNumber;
+
+                        // Verify OTP
+                        final result = await authController.verifyOTP(
+                          otpController.text,
+                        );
+                        // Navigation is handled by the authController.checkUserExistsAndNavigate method
                       } catch (e) {
                         Get.snackbar(
-                          'Error', 
+                          'Error',
                           'Failed to verify OTP: ${e.toString()}',
                           snackPosition: SnackPosition.BOTTOM,
                           backgroundColor: Colors.red.withOpacity(0.1),
@@ -147,40 +205,49 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                         );
                       }
                     },
-                  )),
-              const SizedBox(height: 20),
-              Center(
-                child: TextButton(
-                  onPressed: canResend ? () async {
-                    try {
-                      startTimer();
-                      await authController.sendOTP(widget.phoneNumber);
-                      Get.snackbar(
-                        'Success', 
-                        'OTP resent successfully',
-                        snackPosition: SnackPosition.BOTTOM,
-                        backgroundColor: Colors.green.withOpacity(0.1),
-                        colorText: Colors.green,
-                      );
-                    } catch (e) {
-                      Get.snackbar(
-                        'Error', 
-                        'Failed to resend OTP: ${e.toString()}',
-                        snackPosition: SnackPosition.BOTTOM,
-                        backgroundColor: Colors.red.withOpacity(0.1),
-                        colorText: Colors.red,
-                      );
-                    }
-                  } : null,
-                  child: Text(
-                    'Resend OTP',
-                    style: TextStyle(
-                      color: canResend ? Colors.blue : Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: TextButton(
+                    onPressed:
+                        canResend
+                            ? () async {
+                              try {
+                                startTimer();
+                                await authController.sendOTP(
+                                  widget.phoneNumber,
+                                );
+                                Get.snackbar(
+                                  'Success',
+                                  'OTP resent successfully',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.green.withOpacity(
+                                    0.1,
+                                  ),
+                                  colorText: Colors.green,
+                                );
+                              } catch (e) {
+                                Get.snackbar(
+                                  'Error',
+                                  'Failed to resend OTP: ${e.toString()}',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.red.withOpacity(0.1),
+                                  colorText: Colors.red,
+                                );
+                              }
+                            }
+                            : null,
+                    child: Text(
+                      'Resend OTP',
+                      style: TextStyle(
+                        color: canResend ? Colors.blue : Colors.grey,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

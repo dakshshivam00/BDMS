@@ -3,19 +3,19 @@ import 'package:get/get.dart';
 import '../../controllers/user_controller.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_textfield.dart';
+import '../../controllers/auth_controller.dart';
 
-class EditProfilePage extends StatefulWidget {
-  const EditProfilePage({Key? key}) : super(key: key);
+class ProfileSetupPage extends StatefulWidget {
+  const ProfileSetupPage({Key? key}) : super(key: key);
 
   @override
-  State<EditProfilePage> createState() => _EditProfilePageState();
+  State<ProfileSetupPage> createState() => _ProfileSetupPageState();
 }
 
-class _EditProfilePageState extends State<EditProfilePage> {
+class _ProfileSetupPageState extends State<ProfileSetupPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _cityController = TextEditingController();
   final _stateController = TextEditingController();
@@ -36,15 +36,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
+
+    // Try to populate any existing user data
     final user = userController.currentUser.value;
     if (user != null) {
-      _nameController.text = user.name;
-      _emailController.text = user.email;
-      _phoneController.text = user.phoneNumber;
-      _addressController.text = user.address;
-      _cityController.text = user.city;
-      _stateController.text = user.state;
-      _selectedBloodType = user.bloodType;
+      if (user.name.isNotEmpty) _nameController.text = user.name;
+      if (user.email.isNotEmpty) _emailController.text = user.email;
+      if (user.address.isNotEmpty) _addressController.text = user.address;
+      if (user.city.isNotEmpty) _cityController.text = user.city;
+      if (user.state.isNotEmpty) _stateController.text = user.state;
+      if (user.bloodType.isNotEmpty) _selectedBloodType = user.bloodType;
     }
   }
 
@@ -52,7 +53,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _addressController.dispose();
     _cityController.dispose();
     _stateController.dispose();
@@ -61,12 +61,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if user already exists (has phone number) or is completely new
+    final isExistingUser =
+        userController.currentUser.value?.phoneNumber?.isNotEmpty ?? false;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile'),
-        elevation: 0,
+        title: Text(
+          isExistingUser ? 'Complete Your Profile' : 'Create Profile',
+        ),
         backgroundColor: Colors.red,
-        foregroundColor: Colors.white,
+        automaticallyImplyLeading: false, // Disable back button
       ),
       body: Obx(() {
         if (userController.isLoading.value) {
@@ -82,6 +87,37 @@ class _EditProfilePageState extends State<EditProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  isExistingUser ? 'Welcome Back!' : 'Welcome to BDMS!',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isExistingUser
+                      ? 'Please complete your profile information to continue.'
+                      : 'This is your first time logging in. Please create your profile to use the app.',
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                const SizedBox(height: 24),
+
+                // Profile image placeholder
+                Center(
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.red.shade100,
+                    child: const Icon(
+                      Icons.person,
+                      size: 50,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
                 const Text(
                   'Personal Information',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -112,22 +148,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                CustomTextField(
-                  label: 'Phone',
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your phone number';
-                    }
-                    if (value.length < 10) {
-                      return 'Please enter a valid phone number';
-                    }
-                    return null;
-                  },
-                ),
                 const SizedBox(height: 24),
+
                 const Text(
                   'Blood Information',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -163,6 +185,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 24),
+
                 const Text(
                   'Address Information',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -202,7 +225,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   },
                 ),
                 const SizedBox(height: 24),
-                CustomButton(text: 'Update Profile', onPressed: _updateProfile),
+                CustomButton(
+                  text:
+                      isExistingUser
+                          ? 'Update Profile & Continue'
+                          : 'Create Profile & Continue',
+                  onPressed: _saveProfile,
+                ),
               ],
             ),
           ),
@@ -211,7 +240,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  void _updateProfile() async {
+  void _saveProfile() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedBloodType.isEmpty) {
         Get.snackbar(
@@ -225,31 +254,49 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
 
       try {
+        print('Starting profile save process...');
+        final auth = Get.find<AuthController>();
+        final phoneNumber = auth.getCurrentUserPhone();
+
+        print('Current auth state:');
+        print('Phone Number: $phoneNumber');
+        print('User ID: ${auth.getCurrentUserId()}');
+        print('Is logged in: ${auth.isLoggedIn()}');
+
+        print('Attempting to update user profile...');
         await userController.updateUserProfile(
           name: _nameController.text,
           email: _emailController.text,
-          phoneNumber: _phoneController.text,
+          phoneNumber: phoneNumber,
           address: _addressController.text,
           city: _cityController.text,
           state: _stateController.text,
           bloodType: _selectedBloodType,
         );
 
-        Get.back();
+        print('Profile updated successfully, navigating to home...');
         Get.snackbar(
           'Success',
-          'Profile updated successfully',
+          'Profile created successfully',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green.withOpacity(0.1),
           colorText: Colors.green,
         );
+
+        // Navigate to home page
+        Get.offAllNamed('/home');
       } catch (e) {
+        print('Error in _saveProfile:');
+        print('Error details: $e');
+        print('Stack trace: ${StackTrace.current}');
+
         Get.snackbar(
           'Error',
-          'Failed to update profile: $e',
+          'Failed to create profile: $e',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.withOpacity(0.1),
           colorText: Colors.red,
+          duration: const Duration(seconds: 5),
         );
       }
     }

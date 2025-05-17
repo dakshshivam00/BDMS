@@ -10,6 +10,7 @@ class BloodRequest {
   final DateTime requestDate;
   final DateTime? completedAt;
   final String city;
+  final String createdBy;
 
   BloodRequest({
     required this.id,
@@ -23,5 +24,6 @@ class BloodRequest {
     required this.requestDate,
     this.completedAt,
     required this.city,
+    this.createdBy = '',
   });
 }

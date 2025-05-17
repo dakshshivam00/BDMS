@@ -28,9 +28,48 @@ class ProfilePage extends StatelessWidget {
         ],
       ),
       body: Obx(() {
+        // Check both the userController's loading state and if user data is available
+        if (userController.isLoading.value) {
+          return const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text("Loading profile...", style: TextStyle(fontSize: 16)),
+              ],
+            ),
+          );
+        }
+
         final user = userController.currentUser.value;
+
         if (user == null) {
-          return const Center(child: CircularProgressIndicator());
+          // If user is null and not loading, try to fetch again
+          Future.delayed(Duration.zero, () {
+            userController.fetchCurrentUser();
+          });
+
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                const Text(
+                  "Loading profile...",
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    userController.fetchCurrentUser();
+                  },
+                  child: const Text('Refresh'),
+                ),
+              ],
+            ),
+          );
         }
 
         return SingleChildScrollView(
@@ -204,28 +243,37 @@ class ProfilePage extends StatelessWidget {
               // Logout Button
               CustomButton(
                 text: 'Logout',
-                onPressed: () async {
-                  final confirmed = await Get.dialog<bool>(
-                    AlertDialog(
-                      title: const Text('Logout'),
-                      content: const Text('Are you sure you want to logout?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Get.back(result: false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Get.back(result: true),
-                          child: const Text('Logout'),
-                        ),
-                      ],
-                    ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (BuildContext dialogContext) {
+                      return AlertDialog(
+                        title: const Text('Logout'),
+                        content: const Text('Are you sure you want to logout?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(
+                                dialogContext,
+                              ).pop(); // Close the dialog
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.of(
+                                dialogContext,
+                              ).pop(); // Close the dialog
+                              await authController.signOut();
+                              Get.offAllNamed('/login');
+                            },
+                            child: const Text('Logout'),
+                          ),
+                        ],
+                      );
+                    },
                   );
-
-                  if (confirmed == true) {
-                    await authController.signOut();
-                    Get.offAllNamed('/login');
-                  }
                 },
                 backgroundColor: Colors.red,
               ),
@@ -233,6 +281,35 @@ class ProfilePage extends StatelessWidget {
           ),
         );
       }),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 3,
+        selectedItemColor: Colors.red,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Requests'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.volunteer_activism),
+            label: 'Donate',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
+        onTap: (index) {
+          if (index == 0) {
+            Get.offAllNamed('/home');
+          } else if (index == 1) {
+            Get.offAllNamed('/blood-requests');
+          } else if (index == 2) {
+            Get.offAllNamed('/donor-registration');
+          } else if (index == 3) {
+            // Already on profile page
+          }
+        },
+      ),
     );
   }
 

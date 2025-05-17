@@ -217,43 +217,83 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
               // Submit Button
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  // In the Submit Button's onPressed method, update to add the request to the controller
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // Create a new blood request and add it to the controller
-                      final bloodRequestController =
-                          Get.find<BloodRequestController>();
-                      bloodRequestController.addBloodRequest(
-                        patientName: _patientNameController.text,
-                        bloodType: _selectedBloodType,
-                        hospital: _hospitalController.text,
-                        reason: _reasonController.text,
-                        contactNumber: _contactController.text,
-                        urgency: _selectedUrgency,
-                        city: _cityController.text,
-                      );
-                      Get.back();
-                      Get.snackbar(
-                        'Success',
-                        'Blood request submitted successfully',
-                        snackPosition: SnackPosition.BOTTOM,
-                        backgroundColor: Colors.green.withOpacity(0.1),
-                        colorText: Colors.green,
-                      );
-                    }
+                child: GetBuilder<BloodRequestController>(
+                  init: Get.find<BloodRequestController>(),
+                  builder: (controller) {
+                    return Obx(
+                      () => ElevatedButton(
+                        onPressed:
+                            controller.isLoading.value
+                                ? null
+                                : () async {
+                                  if (_formKey.currentState!.validate()) {
+                                    try {
+                                      // Show loading indicator and disable the button
+                                      controller.isLoading.value = true;
+
+                                      // Create a new blood request and add it to the controller
+                                      await controller.addBloodRequest(
+                                        patientName:
+                                            _patientNameController.text,
+                                        bloodType: _selectedBloodType,
+                                        hospital: _hospitalController.text,
+                                        reason: _reasonController.text,
+                                        contactNumber: _contactController.text,
+                                        urgency: _selectedUrgency,
+                                        city: _cityController.text,
+                                      );
+
+                                      Get.back();
+                                      Get.snackbar(
+                                        'Success',
+                                        'Blood request submitted successfully',
+                                        snackPosition: SnackPosition.BOTTOM,
+                                        backgroundColor: Colors.green
+                                            .withOpacity(0.1),
+                                        colorText: Colors.green,
+                                      );
+                                    } catch (e) {
+                                      Get.snackbar(
+                                        'Error',
+                                        'Failed to submit request: $e',
+                                        snackPosition: SnackPosition.BOTTOM,
+                                        backgroundColor: Colors.red.withOpacity(
+                                          0.1,
+                                        ),
+                                        colorText: Colors.red,
+                                      );
+                                    } finally {
+                                      // Reset loading state
+                                      controller.isLoading.value = false;
+                                    }
+                                  }
+                                },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child:
+                            controller.isLoading.value
+                                ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                                : const Text(
+                                  'Submit Request',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                      ),
+                    );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Submit Request',
-                    style: TextStyle(fontSize: 16),
-                  ),
                 ),
               ),
             ],

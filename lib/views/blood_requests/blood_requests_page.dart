@@ -5,12 +5,19 @@ import '../../controllers/blood_request_controller.dart';
 import '../../models/blood_request.dart';
 
 class BloodRequestsPage extends StatelessWidget {
-  const BloodRequestsPage({Key? key}) : super(key: key);
+  final String? initialFilter;
+
+  const BloodRequestsPage({Key? key, this.initialFilter}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // Initialize the controller if not already done
     final bloodRequestController = Get.put(BloodRequestController());
+
+    // Set initial filter if provided
+    if (initialFilter != null) {
+      bloodRequestController.setFilter(initialFilter!);
+    }
 
     // Trigger data loading
     bloodRequestController.fetchBloodRequests();

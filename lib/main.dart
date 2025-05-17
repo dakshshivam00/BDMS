@@ -10,9 +10,18 @@ import 'views/home/home_page.dart';
 import 'views/blood_requests/blood_requests_page.dart';
 import 'views/blood_requests/create_request_page.dart';
 import 'controllers/user_controller.dart';
+import 'views/donor/available_donors_page.dart';
+import 'views/auth/profile_setup_page.dart';
+import 'views/profile/user_search_page.dart';
+import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Suppress debug logging in development
+  if (!kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
 
   try {
     await Firebase.initializeApp();
@@ -31,7 +40,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // Initialize controllers
     final authController = Get.put(AuthController(), permanent: true);
-    Get.put(UserController(), permanent: true);
+    final userController = Get.put(UserController(), permanent: true);
 
     return GetMaterialApp(
       title: 'Blood Donation Management System',
@@ -40,15 +49,55 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.red,
         scaffoldBackgroundColor: Colors.white,
       ),
-      initialRoute: authController.isLoggedIn() ? '/home' : '/login',
-      // In your GetMaterialApp
+      initialRoute: '/login',
+      onInit: () async {
+        print("App initialization started");
+        // Check if user is already logged in
+        if (authController.isLoggedIn()) {
+          print("User is logged in, fetching user data");
+          try {
+            // For test users, we need to ensure we have the phone number
+            String userId = authController.getCurrentUserId();
+            if (userId.startsWith('test-')) {
+              // Extract phone number from test user ID
+              String phoneNumber = userId.replaceAll('test-', '');
+              authController.lastVerifiedPhone = phoneNumber;
+              print("Restored test user phone number: $phoneNumber");
+            }
+
+            await userController.fetchCurrentUser();
+            print("User data fetched successfully");
+
+            // Check if user has a complete profile
+            if (userController.currentUser.value != null &&
+                userController.currentUser.value!.name.isNotEmpty) {
+              print("User has complete profile, navigating to home");
+              Get.offAllNamed('/home');
+            } else {
+              print("User profile incomplete, navigating to profile setup");
+              Get.offAllNamed('/profile-setup');
+            }
+          } catch (e) {
+            print("Error during initialization: $e");
+            // If there's an error, redirect to login
+            Get.offAllNamed('/login');
+          }
+        } else {
+          print("No user logged in");
+        }
+      },
       getPages: [
         GetPage(name: '/login', page: () => const LoginPage()),
         GetPage(name: '/home', page: () => const HomePage()),
+        GetPage(name: '/profile-setup', page: () => const ProfileSetupPage()),
         GetPage(name: '/blood-requests', page: () => const BloodRequestsPage()),
         GetPage(
           name: '/donor-registration',
           page: () => const DonorRegistrationPage(),
+        ),
+        GetPage(
+          name: '/available-donors',
+          page: () => const AvailableDonorsPage(),
         ),
         GetPage(name: '/profile', page: () => const ProfilePage()),
         GetPage(
@@ -68,6 +117,8 @@ class MyApp extends StatelessWidget {
             }
           },
         ),
+        GetPage(name: '/create-request', page: () => const CreateRequestPage()),
+        GetPage(name: '/user-search', page: () => const UserSearchPage()),
       ],
     );
   }
